@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Fase 1: solo lectura contra la API de ARGOS (Wazuh). Sin permisos de
+         escritura/acciones a propósito. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- PASO 2: notificacion local de alertas Media/Alta/Critica (runtime prompt en API 33+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Vigilancia en segundo plano: Foreground Service tipo dataSync (sondeo
+         periodico por red) que sondea ARGOS aunque la app este cerrada.
+         NOTA: se probo primero con tipo "specialUse", pero en el Samsung A54
+         de pruebas (Android 16 real) el PackageManager descartaba el
+         servicio en silencio (ni dumpsys package ni "am start-foreground-
+         service" lo encontraban, pese a que aapt2 confirmaba que el APK
+         instalado lo declaraba bien); dataSync es el tipo estandar y
+         probado para este caso de uso, sin ese problema. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Para pedir la exencion de optimizacion de bateria al activar la
+         vigilancia (ver ConfigScreen.kt): sin ella, Android/Samsung puede
+         matar el Foreground Service en cuanto la app deja de estar en
+         primer plano (confirmado: appop RUN_ANY_IN_BACKGROUND=ignore por
+         defecto en instalaciones nuevas). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:name=".HermesApp"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Hermes">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Hermes"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".monitor.AlertMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".monitor.BootCompletedReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

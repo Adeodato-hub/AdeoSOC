@@ -1,0 +1,262 @@
+﻿{
+    "took":  106,
+    "timed_out":  false,
+    "_shards":  {
+                    "total":  69,
+                    "successful":  69,
+                    "skipped":  0,
+                    "failed":  0
+                },
+    "hits":  {
+                 "total":  {
+                               "value":  10000,
+                               "relation":  "gte"
+                           },
+                 "max_score":  null,
+                 "hits":  [
+                              {
+                                  "_index":  "wazuh-alerts-4.x-2026.07.05",
+                                  "_id":  "zZUzM58B8ZoPM4T3WxoK",
+                                  "_score":  null,
+                                  "_source":  {
+                                                  "agent":  {
+                                                                "ip":  "<IP_LAB_NAT>",
+                                                                "name":  "lubuntu",
+                                                                "id":  "001"
+                                                            },
+                                                  "manager":  {
+                                                                  "name":  "wazuh-server"
+                                                              },
+                                                  "data":  {
+                                                               "app_proto":  "dhcp",
+                                                               "ip_v":  "4",
+                                                               "in_iface":  "enp0s3",
+                                                               "src_ip":  "0.0.0.0",
+                                                               "src_port":  "68",
+                                                               "event_type":  "alert",
+                                                               "alert":  {
+                                                                             "severity":  "1",
+                                                                             "signature_id":  "2022973",
+                                                                             "rev":  "1",
+                                                                             "metadata":  {
+                                                                                              "performance_impact":  [
+                                                                                                                         "Low"
+                                                                                                                     ],
+                                                                                              "attack_target":  [
+                                                                                                                    "Client_Endpoint"
+                                                                                                                ],
+                                                                                              "updated_at":  [
+                                                                                                                 "2019_07_26"
+                                                                                                             ],
+                                                                                              "confidence":  [
+                                                                                                                 "Medium"
+                                                                                                             ],
+                                                                                              "reviewed_at":  [
+                                                                                                                  "2024_04_19"
+                                                                                                              ],
+                                                                                              "created_at":  [
+                                                                                                                 "2016_07_18"
+                                                                                                             ],
+                                                                                              "signature_severity":  [
+                                                                                                                         "Informational"
+                                                                                                                     ],
+                                                                                              "deployment":  [
+                                                                                                                 "Perimeter"
+                                                                                                             ]
+                                                                                          },
+                                                                             "gid":  "1",
+                                                                             "signature":  "ET INFO Possible Kali Linux hostname in DHCP Request Packet",
+                                                                             "action":  "allowed",
+                                                                             "category":  "Potential Corporate Privacy Violation"
+                                                                         },
+                                                               "flow_id":  "950252783225878.000000",
+                                                               "dest_ip":  "255.255.255.255",
+                                                               "proto":  "UDP",
+                                                               "dest_port":  "67",
+                                                               "pkt_src":  "wire/pcap",
+                                                               "flow":  {
+                                                                            "src_ip":  "0.0.0.0",
+                                                                            "src_port":  "68",
+                                                                            "pkts_toserver":  "1",
+                                                                            "dest_ip":  "255.255.255.255",
+                                                                            "start":  "2026-07-05T18:53:23.090175+0200",
+                                                                            "bytes_toclient":  "0",
+                                                                            "bytes_toserver":  "330",
+                                                                            "pkts_toclient":  "0",
+                                                                            "dest_port":  "67"
+                                                                        },
+                                                               "timestamp":  "2026-07-05T18:53:23.090175+0200",
+                                                               "direction":  "to_server"
+                                                           },
+                                                  "rule":  {
+                                                               "firedtimes":  1,
+                                                               "mail":  false,
+                                                               "level":  6,
+                                                               "description":  "Suricata: Posible hostname de Kali Linux en peticion DHCP (ARGOS)",
+                                                               "groups":  [
+                                                                              "suricata",
+                                                                              "argos",
+                                                                              "recon"
+                                                                          ],
+                                                               "id":  "100010"
+                                                           },
+                                                  "decoder":  {
+                                                                  "name":  "json"
+                                                              },
+                                                  "full_log":  "{\"timestamp\":\"2026-07-05T18:53:23.090175+0200\",\"flow_id\":950252783225878,\"in_iface\":\"enp0s3\",\"event_type\":\"alert\",\"src_ip\":\"0.0.0.0\",\"src_port\":68,\"dest_ip\":\"255.255.255.255\",\"dest_port\":67,\"proto\":\"UDP\",\"ip_v\":4,\"pkt_src\":\"wire/pcap\",\"alert\":{\"action\":\"allowed\",\"gid\":1,\"signature_id\":2022973,\"rev\":1,\"signature\":\"ET INFO Possible Kali Linux hostname in DHCP Request Packet\",\"category\":\"Potential Corporate Privacy Violation\",\"severity\":1,\"metadata\":{\"attack_target\":[\"Client_Endpoint\"],\"confidence\":[\"Medium\"],\"created_at\":[\"2016_07_18\"],\"deployment\":[\"Perimeter\"],\"performance_impact\":[\"Low\"],\"reviewed_at\":[\"2024_04_19\"],\"signature_severity\":[\"Informational\"],\"updated_at\":[\"2019_07_26\"]}},\"app_proto\":\"dhcp\",\"direction\":\"to_server\",\"flow\":{\"pkts_toserver\":1,\"pkts_toclient\":0,\"bytes_toserver\":330,\"bytes_toclient\":0,\"start\":\"2026-07-05T18:53:23.090175+0200\",\"src_ip\":\"0.0.0.0\",\"dest_ip\":\"255.255.255.255\",\"src_port\":68,\"dest_port\":67}}",
+                                                  "input":  {
+                                                                "type":  "log"
+                                                            },
+                                                  "@timestamp":  "2026-07-05T16:53:23.371Z",
+                                                  "location":  "/var/log/suricata/eve.json",
+                                                  "id":  "1783270403.4622",
+                                                  "timestamp":  "2026-07-05T16:53:23.371+0000"
+                                              },
+                                  "sort":  [
+                                               1783270403371
+                                           ]
+                              },
+                              {
+                                  "_index":  "wazuh-alerts-4.x-2026.07.05",
+                                  "_id":  "ypUvM58B8ZoPM4T3tBpS",
+                                  "_score":  null,
+                                  "_source":  {
+                                                  "agent":  {
+                                                                "name":  "wazuh-server",
+                                                                "id":  "000"
+                                                            },
+                                                  "manager":  {
+                                                                  "name":  "wazuh-server"
+                                                              },
+                                                  "data":  {
+                                                               "title":  "Process \u00274620\u0027 hidden from /proc."
+                                                           },
+                                                  "rule":  {
+                                                               "firedtimes":  1,
+                                                               "mail":  false,
+                                                               "level":  11,
+                                                               "description":  "Possible kernel level rootkit",
+                                                               "groups":  [
+                                                                              "ossec",
+                                                                              "rootcheck"
+                                                                          ],
+                                                               "mitre":  {
+                                                                             "technique":  [
+                                                                                               "Rootkit"
+                                                                                           ],
+                                                                             "id":  [
+                                                                                        "T1014"
+                                                                                    ],
+                                                                             "tactic":  [
+                                                                                            "Defense Evasion"
+                                                                                        ]
+                                                                         },
+                                                               "id":  "521"
+                                                           },
+                                                  "decoder":  {
+                                                                  "name":  "rootcheck"
+                                                              },
+                                                  "full_log":  "Process \u00274620\u0027 hidden from /proc. Possible kernel level rootkit.",
+                                                  "input":  {
+                                                                "type":  "log"
+                                                            },
+                                                  "@timestamp":  "2026-07-05T16:49:46.663Z",
+                                                  "location":  "rootcheck",
+                                                  "id":  "1783270186.4369",
+                                                  "timestamp":  "2026-07-05T16:49:46.663+0000"
+                                              },
+                                  "sort":  [
+                                               1783270186663
+                                           ]
+                              },
+                              {
+                                  "_index":  "wazuh-alerts-4.x-2026.07.05",
+                                  "_id":  "x5UvM58B8ZoPM4T3nxpo",
+                                  "_score":  null,
+                                  "_source":  {
+                                                  "predecoder":  {
+                                                                     "hostname":  "lubuntu",
+                                                                     "program_name":  "sddm-helper",
+                                                                     "timestamp":  "Jul 05 16:47:18"
+                                                                 },
+                                                  "agent":  {
+                                                                "ip":  "<IP_LAB_NAT>",
+                                                                "name":  "lubuntu",
+                                                                "id":  "001"
+                                                            },
+                                                  "manager":  {
+                                                                  "name":  "wazuh-server"
+                                                              },
+                                                  "data":  {
+                                                               "srcuser":  "usuario",
+                                                               "uid":  "0",
+                                                               "dstuser":  "usuario"
+                                                           },
+                                                  "rule":  {
+                                                               "mail":  false,
+                                                               "level":  3,
+                                                               "pci_dss":  [
+                                                                               "10.2.5"
+                                                                           ],
+                                                               "hipaa":  [
+                                                                             "164.312.b"
+                                                                         ],
+                                                               "tsc":  [
+                                                                           "CC6.8",
+                                                                           "CC7.2",
+                                                                           "CC7.3"
+                                                                       ],
+                                                               "description":  "PAM: Login session opened.",
+                                                               "groups":  [
+                                                                              "pam",
+                                                                              "syslog",
+                                                                              "authentication_success"
+                                                                          ],
+                                                               "nist_800_53":  [
+                                                                                   "AU.14",
+                                                                                   "AC.7"
+                                                                               ],
+                                                               "gdpr":  [
+                                                                            "IV_32.2"
+                                                                        ],
+                                                               "firedtimes":  3,
+                                                               "mitre":  {
+                                                                             "technique":  [
+                                                                                               "Valid Accounts"
+                                                                                           ],
+                                                                             "id":  [
+                                                                                        "T1078"
+                                                                                    ],
+                                                                             "tactic":  [
+                                                                                            "Defense Evasion",
+                                                                                            "Persistence",
+                                                                                            "Privilege Escalation",
+                                                                                            "Initial Access"
+                                                                                        ]
+                                                                         },
+                                                               "id":  "5501",
+                                                               "gpg13":  [
+                                                                             "7.8",
+                                                                             "7.9"
+                                                                         ]
+                                                           },
+                                                  "decoder":  {
+                                                                  "parent":  "pam",
+                                                                  "name":  "pam"
+                                                              },
+                                                  "full_log":  "Jul 05 16:47:18 lubuntu sddm-helper[3532]: pam_unix(sddm:session): session opened for user usuario(uid=1001) by usuario(uid=0)",
+                                                  "input":  {
+                                                                "type":  "log"
+                                                            },
+                                                  "@timestamp":  "2026-07-05T16:47:18.833Z",
+                                                  "location":  "journald",
+                                                  "id":  "1783270038.3930",
+                                                  "timestamp":  "2026-07-05T16:47:18.833+0000"
+                                              },
+                                  "sort":  [
+                                               1783270038833
+                                           ]
+                              }
+                          ]
+             }
+}
