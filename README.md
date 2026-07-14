@@ -6,15 +6,15 @@
   <img src="https://img.shields.io/badge/Backend-ARGOS%20%2F%20Wazuh-blue?style=flat-square" alt="Backend ARGOS/Wazuh">
 </p>
 
-App Android del proyecto **ARGOS**: cliente de bolsillo para un SOC doméstico basado en Wazuh, con vigilancia en segundo plano, notificaciones locales y enriquecimiento por IA. Nombre público **AdeoSOC** (`applicationId es.adeodato.adeosoc`); codename interno del repositorio y del código, **HERMES**.
+Cliente Android de **ARGOS**: un SOC home-lab construido sobre **Wazuh** (herramienta de detección y respuesta de grado empresarial), con vigilancia en segundo plano, notificaciones locales, triage de alertas asistido por IA y convergencia IT/OT en un único panel. Nombre público **AdeoSOC** (`applicationId es.adeodato.adeosoc`); codename interno del repositorio y del código, **HERMES**.
 
 El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive en el repositorio hermano [ARGOS](https://github.com/Adeodato-hub/ARGOS).
 
 ## Pestañas
 
-- **Alertas** — lista en vivo con severidad por color, agente, regla, fecha/hora y detalle por alerta.
-- **Activos** — un dispositivo por agente visto en las alertas, con semáforo verde/ámbar/rojo según su nivel más grave.
-- **Resumen** — resumen de turno (últimas 24h) generado en el Manager y leído del índice `argos-shift-summary`.
+- **Alertas** — lista en vivo con severidad por color, agente, regla, fecha/hora y detalle por alerta. Filtro Todas/OT/IT/Críticas y etiqueta **OT** en las alertas del segmento de tecnología operativa (consulta dedicada al índice, no depende del lote reciente de IT).
+- **Activos** — un dispositivo por agente visto en las alertas (semáforo verde/ámbar/rojo según su nivel más grave), más los activos OT detectados por su propio poller, con detalle de exposición y telemetría.
+- **Resumen** — resumen de turno (últimas 24h) generado en el Manager (`argos-shift-summary`) y tarjeta OT en vivo (activos, exposiciones abiertas, última alerta).
 - **Ajustes** — URL/usuario/contraseña de ARGOS, segundos de refresco, control de la vigilancia en segundo plano.
 
 ## Arquitectura
@@ -49,6 +49,7 @@ Las cuatro pestañas en uso real contra ARGOS (`docs/evidencia/`). IPs internas,
 
 - **Fase 1** (cerrada): estructura de la app, notificaciones locales, APK de release firmada.
 - **Fase 2** (cerrada): vigilancia en segundo plano, notificaciones ampliadas, enriquecimiento por IA no bloqueante, pestaña Resumen.
+- **Fase 3** (cerrada): convergencia IT/OT en un único panel — filtro y etiqueta OT en Alertas, activos OT con detalle de exposición/telemetría en Activos, tarjeta OT en vivo en Resumen.
 
 Detalle paso a paso en [`docs/`](docs/).
 
@@ -58,19 +59,17 @@ Ver [`docs/paso3-apk-instalacion.md`](docs/paso3-apk-instalacion.md) (build firm
 
 ## Seguridad
 
-**Cerrado (Fase B, hardening — 2026-07-10):**
+- [x] Usuario de solo lectura dedicado en el Indexer, acotado a los tres índices que la app necesita (`wazuh-alerts-*`, `argos-ai-enrichment`, `argos-shift-summary`), sin permisos de escritura — detalle en `docs/paso0-api-wazuh.md` §9.
+- [x] Contraseña de acceso a la VM: rotada y verificada.
+- [x] Token de Telegram: rotado y vigente.
+- [x] Firewall del host acotado a la red del laboratorio; reglas genéricas de origen abierto deshabilitadas.
+- [x] Enriquecimiento por IA operativo end-to-end (Manager → Ollama → app).
+- [x] Credenciales de la app nunca hardcodeadas: se introducen en Ajustes y se cifran en el dispositivo (`EncryptedSharedPreferences` + Android Keystore).
 
-- [x] Usuario de solo lectura del Indexer: **cerrado** (`<USUARIO_RO_INDEXER>` / rol `adeosoc_readonly`, acotado a `wazuh-alerts-*`, `argos-ai-enrichment` y `argos-shift-summary`, sin permisos de escritura, más `backend_roles: kibanauser` para el proxy del Dashboard — detalle en `docs/paso0-api-wazuh.md` §9). La app ya usa `<USUARIO_RO_INDEXER>` en el dispositivo real; `admin/admin` jubilado del lado de la app.
-- [x] Contraseña de la VM (`<USUARIO_SSH_VM>`): **rotada y verificada**.
-- [x] Token de Telegram: **expuesto y ya revocado el 2026-07-01** — exposición cerrada antes de este repaso.
-- [x] Firewall de Ollama en el host: las dos reglas genéricas `ollama.exe` (TCP/UDP, autogeneradas por Windows, antes abiertas a cualquier origen con perfil "Public") **deshabilitadas**. Solo queda activa la regla dedicada `Ollama - VirtualBox VM`, acotada a `10.0.2.0/24`.
-- [x] `docs/paso0-api-wazuh.md` deja constancia de que `admin/admin` era solo el default de laboratorio de la OVA, ya retirado — ver §9.
+## Roadmap
 
-**Pendiente:**
-
-- [ ] Apuntar `custom-ollama` (lado ARGOS) a la IP correcta del host — el enriquecimiento por IA está caído ahora mismo (`Connection refused`) porque la IP del host cambió (`<IP_LAN_HOST_ANTIGUA>` → `<IP_LAN_HOST_NUEVA>`). Evaluar meter el host en la tailnet para depender de una IP Tailscale fija en vez de la IP LAN, que puede volver a cambiar.
-- [ ] Verificar que la integración de Telegram usa el token vigente tras la revocación del 2026-07-01.
-- [ ] `network.host` del Indexer (opción A del *known issue*, ver `docs/paso0-api-wazuh.md` §1) — el acceso directo al 9200 sigue sin resolverse; hoy la app depende del proxy del Dashboard.
+- [ ] Segmentación OT + Suricata — pendiente de disponer del hardware de laboratorio adicional.
+- [ ] Soporte multi-SIEM vía capa de adaptador (hoy acoplado a Wazuh/OpenSearch).
 
 ## Autor
 
