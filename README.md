@@ -29,20 +29,24 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
 
 ## Capturas
 
-Las cuatro pestañas en uso real contra ARGOS (`docs/evidencia/`). IPs internas, usuario y URL de conexión están redactados con una barra sólida sobre la captura original.
+<sub>En uso real contra ARGOS. IPs internas, usuario y URL de conexión redactados sobre la captura original. Haz clic para ampliar.</sub>
 
-<table align="center">
-<tr>
-<td align="center"><img src="docs/evidencia/paso2-01-resumen.png" width="240"><br><sub>Resumen — totales y reglas más frecuentes de las últimas 24h</sub></td>
-<td align="center"><img src="docs/evidencia/paso2-02-alertas.png" width="240"><br><sub>Alertas — lista en vivo con severidad por color</sub></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/evidencia/paso2-03-activos.png" width="240"><br><sub>Activos — agentes derivados de las alertas, con semáforo</sub></td>
-<td align="center"><img src="docs/evidencia/paso2-04-detalle-alerta.png" width="240"><br><sub>Detalle de alerta — con análisis IA no bloqueante</sub></td>
-</tr>
-<tr>
-<td align="center" colspan="2"><img src="docs/evidencia/paso2-05-ajustes-conexion.png" width="240"><br><sub>Ajustes — conexión con ARGOS, credenciales cifradas en el dispositivo</sub></td>
-</tr>
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/img/alertas.png" width="230"><br><sub><b>Alertas</b> · feed en vivo</sub></td>
+    <td align="center" width="33%"><img src="docs/img/alertas-ot.png" width="230"><br><sub><b>Filtros</b> · Todas/OT/IT/Críticas</sub></td>
+    <td align="center" width="33%"><img src="docs/img/alertas-criticas.png" width="230"><br><sub><b>Críticas</b> · nunca enterradas</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/alerta-detalle.png" width="230"><br><sub><b>Detalle</b> · IA + MITRE ATT&CK</sub></td>
+    <td align="center"><img src="docs/img/ot-alerta.png" width="230"><br><sub><b>OT crítico</b> · con análisis IA</sub></td>
+    <td align="center"><img src="docs/img/ot-activo.png" width="230"><br><sub><b>Activo OT ⭐</b> · exposición + telemetría</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/activos.png" width="230"><br><sub><b>Activos</b> · inventario con semáforo</sub></td>
+    <td align="center"><img src="docs/img/resumen.png" width="230"><br><sub><b>Resumen</b> · métricas 24h + IA</sub></td>
+    <td align="center"><img src="docs/img/ajustes.png" width="230"><br><sub><b>Ajustes</b> · conexión al SOC</sub></td>
+  </tr>
 </table>
 
 ## Estado
