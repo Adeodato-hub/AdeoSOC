@@ -18,31 +18,42 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import es.adeodato.hermes.data.model.AlertaCruda
+import es.adeodato.hermes.data.network.ActiveResponseConfig
+import es.adeodato.hermes.data.network.ActiveResponseSource
 import es.adeodato.hermes.data.network.ArgosConfig
 import es.adeodato.hermes.data.network.EnrichmentData
 import es.adeodato.hermes.data.network.EnrichmentSourceFactory
 import es.adeodato.hermes.security.CredentialStore
 import es.adeodato.hermes.ui.theme.HermesBlue
+import es.adeodato.hermes.ui.theme.HermesGreen
 import es.adeodato.hermes.ui.theme.HermesInkDim
+import es.adeodato.hermes.ui.theme.HermesRed
 import es.adeodato.hermes.ui.theme.HermesSurface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
 
@@ -51,6 +62,19 @@ private sealed class EstadoEnriquecimiento {
     data object NoAplica : EstadoEnriquecimiento()      // severidad Baja: no se consulta ni se muestra
     data object NoDisponible : EstadoEnriquecimiento()  // ambar/rojo pero sin doc aun, o error
     data class Disponible(val datos: EnrichmentData) : EstadoEnriquecimiento()
+}
+
+/**
+ * Estado del boton "Bloquear IP" (Active Response !firewall-drop, ver
+ * ActiveResponseSource). Solo IT: se oculta por completo si la alerta es OT
+ * (AlertaCruda.isOt) -- el aislamiento de activos OT es un flujo aparte con
+ * confirmacion humana, pendiente (punto D del roadmap).
+ */
+private sealed class EstadoBloqueo {
+    data object Idle : EstadoBloqueo()
+    data object Bloqueando : EstadoBloqueo()
+    data object Bloqueada : EstadoBloqueo()
+    data class Error(val mensaje: String) : EstadoBloqueo()
 }
 
 /**
@@ -80,7 +104,10 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
         }
 
         var estado by remember(alerta.docId) { mutableStateOf<EstadoEnriquecimiento>(EstadoEnriquecimiento.Cargando) }
+        var estadoBloqueo by remember(alerta.docId) { mutableStateOf<EstadoBloqueo>(EstadoBloqueo.Idle) }
+        var mostrarConfirmacionBloqueo by remember(alerta.docId) { mutableStateOf(false) }
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
 
         LaunchedEffect(alerta.docId) {
             Log.d("AlertDetailScreen", "docId=${alerta.docId} sourceId=${alerta.sourceId} severidad=${alerta.severidad}")
@@ -146,6 +173,44 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
             alerta.srcIp?.let { InfoFila("IP origen", it) }
             alerta.srcUser?.let { InfoFila("Usuario", it) }
 
+            val srcIpBloqueo = alerta.srcIp
+            val agentIdBloqueo = alerta.agentId
+            if (!alerta.isOt && srcIpBloqueo != null && agentIdBloqueo != null) {
+                Spacer(Modifier.height(16.dp))
+                when (val eb = estadoBloqueo) {
+                    is EstadoBloqueo.Idle -> {
+                        Button(
+                            onClick = { mostrarConfirmacionBloqueo = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Text("Bloquear IP")
+                        }
+                    }
+                    is EstadoBloqueo.Bloqueando -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.padding(start = 10.dp))
+                            Text("Bloqueando $srcIpBloqueo…", style = MaterialTheme.typography.bodySmall, color = HermesInkDim)
+                        }
+                    }
+                    is EstadoBloqueo.Bloqueada -> {
+                        Text("IP $srcIpBloqueo bloqueada en el agente $agentIdBloqueo.", color = HermesGreen)
+                    }
+                    is EstadoBloqueo.Error -> {
+                        Column {
+                            Text("Error al bloquear: ${eb.mensaje}", color = HermesRed, style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedButton(onClick = { mostrarConfirmacionBloqueo = true }) {
+                                Text("Reintentar")
+                            }
+                        }
+                    }
+                }
+            }
+
             when (val e = estado) {
                 is EstadoEnriquecimiento.NoAplica -> Unit // nada que mostrar para severidad Baja
                 is EstadoEnriquecimiento.Cargando -> {
@@ -182,6 +247,51 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
                     }
                 }
             }
+        }
+
+        val srcIpDialogo = alerta.srcIp
+        val agentIdDialogo = alerta.agentId
+        if (mostrarConfirmacionBloqueo && srcIpDialogo != null && agentIdDialogo != null) {
+            AlertDialog(
+                onDismissRequest = { mostrarConfirmacionBloqueo = false },
+                title = { Text("Confirmar bloqueo de IP") },
+                text = {
+                    Text(
+                        "Se bloqueará la IP $srcIpDialogo en el agente $agentIdDialogo mediante Active " +
+                            "Response (firewall-drop). La regla se aplica de inmediato en ese equipo."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mostrarConfirmacionBloqueo = false
+                        estadoBloqueo = EstadoBloqueo.Bloqueando
+                        scope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                try {
+                                    val stored = CredentialStore.load(context)
+                                    if (!stored.isActiveResponseComplete) {
+                                        EstadoBloqueo.Error("Faltan credenciales de Respuesta activa en Ajustes")
+                                    } else {
+                                        val arConfig = ActiveResponseConfig(stored.wazuhApiUrl, stored.arUsername, stored.arPassword)
+                                        ActiveResponseSource(arConfig).blockIp(agentIdDialogo, srcIpDialogo)
+                                        EstadoBloqueo.Bloqueada
+                                    }
+                                } catch (e: Exception) {
+                                    EstadoBloqueo.Error(e.message ?: "error desconocido")
+                                }
+                            }
+                            estadoBloqueo = resultado
+                        }
+                    }) {
+                        Text("Bloquear", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarConfirmacionBloqueo = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }

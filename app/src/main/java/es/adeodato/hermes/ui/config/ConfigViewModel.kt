@@ -26,7 +26,10 @@ data class ConfigUiState(
     val intervaloSondeoSegundos: Int = MonitorPrefs.POLL_SECONDS_DEFAULT,
     val probando: Boolean = false,
     val resultadoPrueba: String? = null,
-    val guardadoOk: Boolean = false
+    val guardadoOk: Boolean = false,
+    val wazuhApiUrl: String = "",
+    val arUsername: String = "",
+    val arPassword: String = ""
 )
 
 class ConfigViewModel(application: Application) : AndroidViewModel(application) {
@@ -44,7 +47,10 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
                 useDashboardProxy = saved.useDashboardProxy,
                 pollSeconds = if (saved.pollSeconds > 0) saved.pollSeconds else current.pollSeconds,
                 monitoreoActivo = deberiaEstarActivo,
-                intervaloSondeoSegundos = MonitorPrefs.getPollSeconds(application)
+                intervaloSondeoSegundos = MonitorPrefs.getPollSeconds(application),
+                wazuhApiUrl = saved.wazuhApiUrl,
+                arUsername = saved.arUsername,
+                arPassword = saved.arPassword
             )
         }
         // Autocorreccion: un reinstall (adb install -r) mata el servicio pero
@@ -62,6 +68,9 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
     fun onPasswordChange(v: String) = _ui.update { it.copy(password = v, guardadoOk = false) }
     fun onUseDashboardProxyChange(v: Boolean) = _ui.update { it.copy(useDashboardProxy = v, guardadoOk = false) }
     fun onPollSecondsChange(v: Int) = _ui.update { it.copy(pollSeconds = v, guardadoOk = false) }
+    fun onWazuhApiUrlChange(v: String) = _ui.update { it.copy(wazuhApiUrl = v, guardadoOk = false) }
+    fun onArUsernameChange(v: String) = _ui.update { it.copy(arUsername = v, guardadoOk = false) }
+    fun onArPasswordChange(v: String) = _ui.update { it.copy(arPassword = v, guardadoOk = false) }
 
     /** Toggle "vigilancia en segundo plano": arranca/para el Foreground Service al momento. */
     fun onMonitoreoActivoChange(activo: Boolean) {
@@ -86,7 +95,10 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
                 username = s.username,
                 password = s.password,
                 useDashboardProxy = s.useDashboardProxy,
-                pollSeconds = s.pollSeconds
+                pollSeconds = s.pollSeconds,
+                wazuhApiUrl = s.wazuhApiUrl,
+                arUsername = s.arUsername,
+                arPassword = s.arPassword
             )
         )
         _ui.update { it.copy(guardadoOk = true) }

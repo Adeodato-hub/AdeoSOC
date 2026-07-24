@@ -154,6 +154,41 @@ fun ConfigScreen(viewModel: ConfigViewModel = viewModel()) {
             }
         }
 
+        Text("Respuesta activa", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Necesario para el botón \"Bloquear IP\" del detalle de alerta. Usuario API dedicado " +
+                "(adeosoc_ar), con permiso restringido a active-response:command -- nunca el admin del Dashboard.",
+            style = MaterialTheme.typography.bodySmall
+        )
+
+        OutlinedTextField(
+            value = ui.wazuhApiUrl,
+            onValueChange = viewModel::onWazuhApiUrlChange,
+            label = { Text("URL API de Wazuh (puerto 55000)") },
+            placeholder = { Text("https://100.117.63.55:55000") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = ui.arUsername,
+            onValueChange = viewModel::onArUsernameChange,
+            label = { Text("Usuario API (adeosoc_ar)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = ui.arPassword,
+            onValueChange = viewModel::onArPasswordChange,
+            label = { Text("Contraseña API") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)

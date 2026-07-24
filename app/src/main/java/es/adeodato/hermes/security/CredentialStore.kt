@@ -17,6 +17,9 @@ object CredentialStore {
     private const val KEY_PASSWORD = "password"
     private const val KEY_USE_DASHBOARD_PROXY = "use_dashboard_proxy"
     private const val KEY_POLL_SECONDS = "poll_seconds"
+    private const val KEY_WAZUH_API_URL = "wazuh_api_url"
+    private const val KEY_AR_USERNAME = "ar_username"
+    private const val KEY_AR_PASSWORD = "ar_password"
 
     private fun prefs(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
@@ -36,10 +39,19 @@ object CredentialStore {
         val username: String,
         val password: String,
         val useDashboardProxy: Boolean,
-        val pollSeconds: Int
+        val pollSeconds: Int,
+        /** URL de la API de Wazuh (puerto 55000, alcanzable por Tailscale) para Respuesta Activa. */
+        val wazuhApiUrl: String = "",
+        /** Usuario API dedicado adeosoc_ar, rol restringido a active-response:command. */
+        val arUsername: String = "",
+        val arPassword: String = ""
     ) {
         val isComplete: Boolean
             get() = baseUrl.isNotBlank() && username.isNotBlank() && password.isNotBlank()
+
+        /** true si hay credenciales suficientes para disparar Active Response (boton "Bloquear IP"). */
+        val isActiveResponseComplete: Boolean
+            get() = wazuhApiUrl.isNotBlank() && arUsername.isNotBlank() && arPassword.isNotBlank()
     }
 
     fun load(context: Context): Config {
@@ -49,7 +61,10 @@ object CredentialStore {
             username = p.getString(KEY_USERNAME, "") ?: "",
             password = p.getString(KEY_PASSWORD, "") ?: "",
             useDashboardProxy = p.getBoolean(KEY_USE_DASHBOARD_PROXY, true),
-            pollSeconds = p.getInt(KEY_POLL_SECONDS, 30)
+            pollSeconds = p.getInt(KEY_POLL_SECONDS, 30),
+            wazuhApiUrl = p.getString(KEY_WAZUH_API_URL, "") ?: "",
+            arUsername = p.getString(KEY_AR_USERNAME, "") ?: "",
+            arPassword = p.getString(KEY_AR_PASSWORD, "") ?: ""
         )
     }
 
@@ -60,6 +75,9 @@ object CredentialStore {
             .putString(KEY_PASSWORD, config.password)
             .putBoolean(KEY_USE_DASHBOARD_PROXY, config.useDashboardProxy)
             .putInt(KEY_POLL_SECONDS, config.pollSeconds)
+            .putString(KEY_WAZUH_API_URL, config.wazuhApiUrl.trim())
+            .putString(KEY_AR_USERNAME, config.arUsername.trim())
+            .putString(KEY_AR_PASSWORD, config.arPassword)
             .apply()
     }
 }
