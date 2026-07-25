@@ -4,10 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import es.adeodato.hermes.data.AlertsRepository
+import es.adeodato.hermes.data.model.AlertaCruda
 import es.adeodato.hermes.data.network.ArgosAlertsSourceFactory
 import es.adeodato.hermes.data.network.ArgosConfig
 import es.adeodato.hermes.monitor.AlertMonitorService
 import es.adeodato.hermes.monitor.MonitorPrefs
+import es.adeodato.hermes.notify.AlertNotificationGate
 import es.adeodato.hermes.security.CredentialStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +26,7 @@ data class ConfigUiState(
     val pollSeconds: Int = 30,
     val monitoreoActivo: Boolean = false,
     val intervaloSondeoSegundos: Int = MonitorPrefs.POLL_SECONDS_DEFAULT,
+    val umbralNotificacion: AlertaCruda.Severidad = MonitorPrefs.UMBRAL_SEVERIDAD_DEFAULT,
     val probando: Boolean = false,
     val resultadoPrueba: String? = null,
     val guardadoOk: Boolean = false,
@@ -48,6 +51,7 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
                 pollSeconds = if (saved.pollSeconds > 0) saved.pollSeconds else current.pollSeconds,
                 monitoreoActivo = deberiaEstarActivo,
                 intervaloSondeoSegundos = MonitorPrefs.getPollSeconds(application),
+                umbralNotificacion = MonitorPrefs.getUmbralSeveridad(application),
                 wazuhApiUrl = saved.wazuhApiUrl,
                 arUsername = saved.arUsername,
                 arPassword = saved.arPassword
@@ -84,6 +88,14 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
     fun onIntervaloSondeoChange(segundos: Int) {
         MonitorPrefs.setPollSeconds(getApplication(), segundos)
         _ui.update { it.copy(intervaloSondeoSegundos = segundos) }
+    }
+
+    /** Umbral minimo de severidad que dispara notificacion. Se aplica al vuelo (AlertNotificationGate es un singleton compartido con el servicio de fondo), sin reiniciar nada. */
+    fun onUmbralNotificacionChange(umbral: AlertaCruda.Severidad) {
+        val app: Application = getApplication()
+        MonitorPrefs.setUmbralSeveridad(app, umbral)
+        AlertNotificationGate.actualizarUmbral(umbral)
+        _ui.update { it.copy(umbralNotificacion = umbral) }
     }
 
     fun guardar() {

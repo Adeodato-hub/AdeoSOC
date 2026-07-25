@@ -29,6 +29,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -56,6 +57,7 @@ import es.adeodato.hermes.ui.alerts.AlertsViewModel
 import es.adeodato.hermes.ui.assets.AssetDetailScreen
 import es.adeodato.hermes.ui.assets.AssetsScreen
 import es.adeodato.hermes.ui.assets.AssetsViewModel
+import es.adeodato.hermes.notify.AlertNotifier
 import es.adeodato.hermes.ui.config.ConfigScreen
 import es.adeodato.hermes.ui.resumen.ResumenScreen
 import es.adeodato.hermes.ui.theme.HermesBlue
@@ -79,9 +81,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         solicitarPermisoNotificacionesSiHaceFalta()
+        // Deep-link: si esta Activity se abrio al tocar una notificacion de
+        // alerta (ver AlertNotifier.pendingIntentDetalle), el extra trae el
+        // docId para saltar directo al detalle en vez de aterrizar en la
+        // lista. FLAG_ACTIVITY_CLEAR_TASK de esa PendingIntent garantiza que
+        // esto sea siempre un arranque nuevo (onCreate), nunca onNewIntent.
+        val alertaDocIdInicial = intent?.getStringExtra(AlertNotifier.EXTRA_ALERT_DOC_ID)
         setContent {
             HermesTheme {
-                HermesRoot()
+                HermesRoot(alertaDocIdInicial = alertaDocIdInicial)
             }
         }
     }
@@ -101,7 +109,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun HermesRoot() {
+private fun HermesRoot(alertaDocIdInicial: String? = null) {
     val navController = rememberNavController()
     // Se comparte la misma instancia entre la lista y el detalle para poder
     // buscar la alerta por id sin volver a pedirla a ARGOS ni duplicar el
@@ -110,6 +118,17 @@ private fun HermesRoot() {
     // Misma razon que alertsViewModel: compartir instancia para poder buscar
     // el activo OT por id en el detalle sin duplicar el fetch (ver AssetDetailScreen).
     val assetsViewModel: AssetsViewModel = viewModel()
+
+    // Deep-link desde una notificacion (ver MainActivity.onCreate): navega al
+    // detalle UNA sola vez tras componer el NavHost. AlertDetailScreen busca
+    // la alerta en el estado ya compartido de alertsViewModel (alimentado por
+    // AlertsFeed, que el propio AlertMonitorService ya publico antes de
+    // notificar) -- no hace falta ningun fetch adicional aqui.
+    LaunchedEffect(alertaDocIdInicial) {
+        if (alertaDocIdInicial != null) {
+            navController.navigate("detalle/$alertaDocIdInicial")
+        }
+    }
 
     Scaffold(
         topBar = { BrandTopBar() },

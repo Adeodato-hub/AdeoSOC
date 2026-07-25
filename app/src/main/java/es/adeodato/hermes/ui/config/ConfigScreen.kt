@@ -130,6 +130,35 @@ fun ConfigScreen(viewModel: ConfigViewModel = viewModel()) {
         }
 
         Column(modifier = Modifier.fillMaxWidth()) {
+            Text("Notificarme a partir de")
+            Text(
+                "Por defecto solo Alta y Crítica, para no saturar de avisos. Media incluye más ruido.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf(
+                    es.adeodato.hermes.data.model.AlertaCruda.Severidad.MEDIA to "Media+",
+                    es.adeodato.hermes.data.model.AlertaCruda.Severidad.ALTA to "Alta+",
+                    es.adeodato.hermes.data.model.AlertaCruda.Severidad.CRITICA to "Solo Crítica"
+                ).forEach { (severidad, etiqueta) ->
+                    val seleccionado = ui.umbralNotificacion == severidad
+                    if (seleccionado) {
+                        Button(onClick = { viewModel.onUmbralNotificacionChange(severidad) }) {
+                            Text(etiqueta)
+                        }
+                    } else {
+                        OutlinedButton(onClick = { viewModel.onUmbralNotificacionChange(severidad) }) {
+                            Text(etiqueta)
+                        }
+                    }
+                }
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
             Text("Intervalo de sondeo en segundo plano")
             Text(
                 "Menos segundos = avisos más rápidos, algo más de batería.",

@@ -42,6 +42,9 @@ object AlertNotifier {
     const val CHANNEL_ID_MEDIA = "argos_alertas_medias"
     const val CHANNEL_ID_SERVICIO = "argos_servicio_vigilancia"
 
+    /** Extra del Intent que MainActivity lee para saltar directo al detalle de esta alerta (mismo docId que usa la navegacion de AlertsScreen). */
+    const val EXTRA_ALERT_DOC_ID = "es.adeodato.hermes.extra.ALERT_DOC_ID"
+
     // Reintentos del enriquecimiento EN SEGUNDO PLANO tras el push inmediato
     // (no bloquean el aviso, ver notificarAlerta). Mismo patron 5s x 7 que
     // AlertDetailScreen.
@@ -136,6 +139,7 @@ object AlertNotifier {
     private fun pendingIntentDetalle(context: Context, alerta: AlertaCruda, notifId: Int): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(EXTRA_ALERT_DOC_ID, alerta.docId)
         }
         return PendingIntent.getActivity(
             context, notifId, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

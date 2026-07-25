@@ -11,8 +11,12 @@ object MonitorPrefs {
     private const val FILE_NAME = "hermes_monitor_prefs"
     private const val KEY_ENABLED = "background_monitor_enabled"
     private const val KEY_POLL_SECONDS = "background_poll_seconds"
+    private const val KEY_UMBRAL_SEVERIDAD = "notif_umbral_severidad"
 
     const val POLL_SECONDS_DEFAULT = 15
+
+    /** Severidad minima que dispara notificacion. Por defecto ALTA (ni Media ni Baja avisan) -- ver AlertNotificationGate. */
+    val UMBRAL_SEVERIDAD_DEFAULT = es.adeodato.hermes.data.model.AlertaCruda.Severidad.ALTA
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
@@ -34,6 +38,24 @@ object MonitorPrefs {
         context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
             .edit()
             .putInt(KEY_POLL_SECONDS, seconds)
+            .apply()
+    }
+
+    /** Umbral minimo de severidad para notificar (Media/Alta/Critica). Guardado por nombre de enum, con fallback a ALTA ante un valor corrupto/desconocido. */
+    fun getUmbralSeveridad(context: Context): es.adeodato.hermes.data.model.AlertaCruda.Severidad {
+        val nombre = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_UMBRAL_SEVERIDAD, null) ?: return UMBRAL_SEVERIDAD_DEFAULT
+        return try {
+            es.adeodato.hermes.data.model.AlertaCruda.Severidad.valueOf(nombre)
+        } catch (e: IllegalArgumentException) {
+            UMBRAL_SEVERIDAD_DEFAULT
+        }
+    }
+
+    fun setUmbralSeveridad(context: Context, umbral: es.adeodato.hermes.data.model.AlertaCruda.Severidad) {
+        context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_UMBRAL_SEVERIDAD, umbral.name)
             .apply()
     }
 }
