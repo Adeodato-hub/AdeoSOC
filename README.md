@@ -54,7 +54,7 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
   </tr>
   <tr>
     <td align="center"><img src="docs/img/ot_reforzado.png" width="230"><br><sub><b>Activo OT ⚠️</b> · confirmación reforzada</sub></td>
-    <td align="center"><img src="docs/img/alerta-regla-horario.png" width="230"><br><sub><b>Regla propia</b> · login SSH fuera de horario</sub></td>
+    <td align="center"><img src="docs/img/ambos_botones.png" width="230"><br><sub><b>Regla propia</b> · login SSH fuera de horario, con Respuesta activa e IA</sub></td>
     <td></td>
   </tr>
 </table>
@@ -64,7 +64,7 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
 - **Fase 1** (cerrada): estructura de la app, notificaciones locales, APK de release firmada.
 - **Fase 2** (cerrada): vigilancia en segundo plano, notificaciones ampliadas, enriquecimiento por IA no bloqueante, pestaña Resumen.
 - **Fase 3** (cerrada): convergencia IT/OT en un único panel — filtro y etiqueta OT en Alertas, activos OT con detalle de exposición/telemetría en Activos, tarjeta OT en vivo en Resumen.
-- **Fase 4** (cerrada): respuesta activa desde el detalle de alerta — botón **Bloquear IP** dispara `firewall-drop` de Wazuh vía un usuario API de mínimo privilegio (`adeosoc_ar`), con diálogo de confirmación; oculto en alertas OT. Cierra el círculo AdeoSOC → ARGOS → Active Response → trazado en el agente.
+- **Fase 4** (cerrada): respuesta activa desde el detalle de alerta — botones **Bloquear IP** (`firewall-drop`) y **Deshabilitar cuenta** (`disable-account`) vía un usuario API de mínimo privilegio (`adeosoc_ar`), con diálogo de confirmación; en activos OT no se ocultan, se muestran con un aviso reforzado. Cierra el círculo AdeoSOC → ARGOS → Active Response → trazado en el agente.
 
 Detalle paso a paso en [`docs/`](docs/).
 
@@ -87,7 +87,8 @@ Ver [`docs/paso3-apk-instalacion.md`](docs/paso3-apk-instalacion.md) (build firm
 - [ ] Segmentación OT + Suricata — pendiente de disponer del hardware de laboratorio adicional.
 - [ ] Soporte multi-SIEM vía capa de adaptador (hoy acoplado a Wazuh/OpenSearch).
 - [ ] Botón "Desbloquear IP" (2ª iteración de la respuesta activa: revertir el `firewall-drop`).
-- [ ] Aislamiento de activos OT con confirmación humana explícita (distinto de Bloquear IP, que hoy solo cubre IT).
+- [ ] Botón "Reactivar cuenta" (revertir `disable-account`, contrapartida de "Deshabilitar cuenta").
+- [ ] Aislamiento dedicado de activos OT (acción específica de contención). Hoy toda acción sobre un activo OT ya exige confirmación reforzada; el aislamiento como tal queda pendiente.
 
 ## Autor
 
