@@ -12,7 +12,7 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
 
 ## Pestañas
 
-- **Alertas** — lista en vivo con severidad por color, agente, regla, fecha/hora y detalle por alerta. Filtro Todas/OT/IT/Críticas y etiqueta **OT** en las alertas del segmento de tecnología operativa (consulta dedicada al índice, no depende del lote reciente de IT). En alertas IT con IP de origen, botón **Bloquear IP** que dispara `firewall-drop` (Active Response de Wazuh) sobre el agente afectado, con diálogo de confirmación — oculto en alertas OT (no hay un agente real que aislar ahí, ver Arquitectura).
+- **Alertas** — lista en vivo con severidad por color, agente, regla, fecha/hora y detalle por alerta. Filtro Todas/OT/IT/Críticas y etiqueta **OT** en las alertas del segmento de tecnología operativa (consulta dedicada al índice, no depende del lote reciente de IT). Botón **Bloquear IP** (`firewall-drop`) cuando hay IP de origen y **Deshabilitar cuenta** (`disable-account`) cuando hay usuario, ambos vía Active Response de Wazuh con diálogo de confirmación — en activos OT no se ocultan, se muestran con un aviso reforzado ("puede afectar a producción") antes de confirmar.
 - **Activos** — un dispositivo por agente visto en las alertas (semáforo verde/ámbar/rojo según su nivel más grave), más los activos OT detectados por su propio poller, con detalle de exposición y telemetría.
 - **Resumen** — resumen de turno (últimas 24h) generado en el Manager (`argos-shift-summary`) y tarjeta OT en vivo (activos, exposiciones abiertas, última alerta).
 - **Ajustes** — URL/usuario/contraseña de ARGOS, segundos de refresco, control de la vigilancia en segundo plano.
@@ -24,7 +24,7 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
 - **Vigilancia en segundo plano**: `AlertMonitorService`, un Foreground Service tipo `dataSync` que sondea ARGOS aunque la app esté cerrada, con reinicio tras reboot (`BootCompletedReceiver`) y exención de optimización de batería.
 - **Notificaciones**: locales, para alertas de nivel Media/Alta/Crítica, con `AlertNotificationGate` evitando duplicados.
 - **IA**: `EnrichmentSource` consulta el índice `argos-ai-enrichment` de forma no bloqueante para la lista de alertas — narrativa en español (2-3 frases) + gravedad + técnica MITRE, generadas por el pipeline de ARGOS contra Ollama (no la app).
-- **Respuesta activa**: `ActiveResponseSource` habla directo con la API nativa de Wazuh (puerto 55000, no el Dashboard/Indexer) — JWT vía `POST /security/user/authenticate`, luego `PUT /active-response` con `!firewall-drop`. Usuario API dedicado (`adeosoc_ar`), con un rol acotado a un único permiso (`active-response:command`, sin lectura de agentes ni nada más) — nunca el admin (`wazuh-wui`) desde la app.
+- **Respuesta activa**: `ActiveResponseSource` habla directo con la API nativa de Wazuh (puerto 55000, no el Dashboard/Indexer) — JWT vía `POST /security/user/authenticate`, luego `PUT /active-response` con `!firewall-drop` (Bloquear IP) o el comando estándar `!disable-account` (Deshabilitar cuenta; el AR custom no se ejecuta al invocarlo por API, solo el ruleset base de Wazuh). Usuario API dedicado (`adeosoc_ar`), con un rol acotado a un único permiso (`active-response:command`, sin lectura de agentes ni nada más) — nunca el admin (`wazuh-wui`) desde la app.
 - **Credenciales**: cifradas en el dispositivo con `EncryptedSharedPreferences` + Android Keystore (`AES256_GCM`/`AES256_SIV`) — nunca en texto plano ni hardcodeadas, incluidas las de `adeosoc_ar`.
 
 ## Capturas
@@ -48,7 +48,12 @@ El backend (Wazuh Manager, reglas de detección, Suricata, triage por IA) vive e
     <td align="center"><img src="docs/img/ajustes.png" width="230"><br><sub><b>Ajustes</b> · conexión al SOC</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/img/alerta-bloquear-ip.png" width="230"><br><sub><b>Bloquear IP 🔴</b> · Active Response en 1 toque</sub></td>
+    <td align="center"><img src="docs/img/solo_ip.png" width="230"><br><sub><b>Bloquear IP 🟠</b> · Active Response en 1 toque</sub></td>
+    <td align="center"><img src="docs/img/solo_cuenta.png" width="230"><br><sub><b>Deshabilitar cuenta 🔴</b> · disable-account estándar</sub></td>
+    <td align="center"><img src="docs/img/ambos_botones.png" width="230"><br><sub><b>Respuesta activa</b> · ambas acciones disponibles</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/ot_reforzado.png" width="230"><br><sub><b>Activo OT ⚠️</b> · confirmación reforzada</sub></td>
     <td align="center"><img src="docs/img/alerta-regla-horario.png" width="230"><br><sub><b>Regla propia</b> · login SSH fuera de horario</sub></td>
     <td></td>
   </tr>
