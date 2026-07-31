@@ -238,7 +238,12 @@ fun ConfigScreen(viewModel: ConfigViewModel = viewModel()) {
         }
 
         if (ui.guardadoOk) {
-            Text("Configuración guardada.", color = HermesGreen)
+            val detalle = ui.guardadoDetalle
+            val esCompleto = detalle == null || !detalle.contains("incompleto")
+            Text(
+                if (detalle != null) "Configuración guardada. $detalle" else "Configuración guardada.",
+                color = if (esCompleto) HermesGreen else HermesRed
+            )
         }
     }
 }

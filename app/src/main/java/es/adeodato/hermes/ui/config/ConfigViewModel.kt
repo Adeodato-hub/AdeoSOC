@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import es.adeodato.hermes.data.AlertsRepository
 import es.adeodato.hermes.data.model.AlertaCruda
+import es.adeodato.hermes.data.network.ActiveResponseConfig
+import es.adeodato.hermes.data.network.ActiveResponseSource
 import es.adeodato.hermes.data.network.ArgosAlertsSourceFactory
 import es.adeodato.hermes.data.network.ArgosConfig
 import es.adeodato.hermes.monitor.AlertMonitorService
@@ -30,6 +32,7 @@ data class ConfigUiState(
     val probando: Boolean = false,
     val resultadoPrueba: String? = null,
     val guardadoOk: Boolean = false,
+    val guardadoDetalle: String? = null,
     val wazuhApiUrl: String = "",
     val arUsername: String = "",
     val arPassword: String = ""
@@ -99,9 +102,10 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun guardar() {
+        val app: Application = getApplication()
         val s = _ui.value
         CredentialStore.save(
-            getApplication(),
+            app,
             CredentialStore.Config(
                 baseUrl = s.baseUrl,
                 username = s.username,
@@ -113,7 +117,17 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
                 arPassword = s.arPassword
             )
         )
-        _ui.update { it.copy(guardadoOk = true) }
+        // Verificacion de lectura real (no solo "hemos llamado a save()"): si el
+        // Keystore/EncryptedSharedPreferences fallase silenciosamente, esto lo
+        // detecta al momento en vez de que aparezca como "faltan credenciales"
+        // minutos despues en el detalle de alerta.
+        val releido = CredentialStore.load(app)
+        val detalle = buildString {
+            append(if (releido.isComplete) "ARGOS: completo" else "ARGOS: incompleto")
+            append(" · ")
+            append(if (releido.isActiveResponseComplete) "Respuesta activa: completo" else "Respuesta activa: incompleto")
+        }
+        _ui.update { it.copy(guardadoOk = true, guardadoDetalle = detalle) }
     }
 
     fun probarConexion() {
@@ -121,7 +135,7 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
         _ui.update { it.copy(probando = true, resultadoPrueba = null) }
         viewModelScope.launch {
             val resultado = withContext(Dispatchers.IO) {
-                try {
+                val argosResultado = try {
                     val config = ArgosConfig(s.baseUrl, s.username, s.password, s.useDashboardProxy)
                     val repo = AlertsRepository(ArgosAlertsSourceFactory.create(config))
                     val alertas = repo.fetchRecentAlerts(size = 3)
@@ -129,6 +143,22 @@ class ConfigViewModel(application: Application) : AndroidViewModel(application) 
                 } catch (e: Exception) {
                     "Error: ${e.message}"
                 }
+                val arResultado = if (s.wazuhApiUrl.isBlank() && s.arUsername.isBlank() && s.arPassword.isBlank()) {
+                    null
+                } else {
+                    try {
+                        val arConfig = ActiveResponseConfig(s.wazuhApiUrl, s.arUsername, s.arPassword)
+                        if (!arConfig.isComplete) {
+                            "Respuesta activa: faltan campos"
+                        } else {
+                            ActiveResponseSource(arConfig).probarAutenticacion()
+                            "Respuesta activa: OK (autenticación válida)"
+                        }
+                    } catch (e: Exception) {
+                        "Respuesta activa: Error: ${e.message}"
+                    }
+                }
+                if (arResultado != null) "$argosResultado · $arResultado" else argosResultado
             }
             _ui.update { it.copy(probando = false, resultadoPrueba = resultado) }
         }

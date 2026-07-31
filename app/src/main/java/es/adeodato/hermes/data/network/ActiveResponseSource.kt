@@ -49,6 +49,11 @@ class ActiveResponseSource(private val config: ActiveResponseConfig) {
         .confiarEnCertificadoAutofirmado()
         .build()
 
+    /** Prueba solo la autenticacion (Basic Auth -> JWT) sin disparar ningun comando. Lanza ArgosApiException si falla. */
+    fun probarAutenticacion() {
+        authenticate()
+    }
+
     private fun authenticate(): String {
         val base = config.wazuhApiUrl.trimEnd('/')
         val request = Request.Builder()
