@@ -46,6 +46,8 @@ import es.adeodato.hermes.data.network.ArgosConfig
 import es.adeodato.hermes.data.network.EnrichmentData
 import es.adeodato.hermes.data.network.EnrichmentSourceFactory
 import es.adeodato.hermes.security.CredentialStore
+import es.adeodato.hermes.ui.theme.HermesAmber
+import es.adeodato.hermes.ui.theme.HermesBg
 import es.adeodato.hermes.ui.theme.HermesBlue
 import es.adeodato.hermes.ui.theme.HermesGreen
 import es.adeodato.hermes.ui.theme.HermesInkDim
@@ -78,6 +80,20 @@ private sealed class EstadoBloqueo {
 }
 
 /**
+ * Estado del boton "Deshabilitar cuenta" (Active Response ESTANDAR
+ * !disable-account, no el custom -- verificado en el servidor el 2026-07-31
+ * que los AR custom no se ejecutan al invocarlos por API). Visible cuando la
+ * alerta trae un usuario de origen (p.ej. regla 100002, abuso de sudo) y no
+ * es OT, igual criterio que "Bloquear IP".
+ */
+private sealed class EstadoDeshabilitar {
+    data object Idle : EstadoDeshabilitar()
+    data object Deshabilitando : EstadoDeshabilitar()
+    data object Deshabilitada : EstadoDeshabilitar()
+    data class Error(val mensaje: String) : EstadoDeshabilitar()
+}
+
+/**
  * PASO 2b: detalle de una alerta. Muestra los datos ya conocidos por la app
  * (descripcion, agente, nivel/color) y, para ambar/rojo, consulta
  * argos-ai-enrichment por el id de la alerta (join 1:1, ver
@@ -106,6 +122,8 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
         var estado by remember(alerta.docId) { mutableStateOf<EstadoEnriquecimiento>(EstadoEnriquecimiento.Cargando) }
         var estadoBloqueo by remember(alerta.docId) { mutableStateOf<EstadoBloqueo>(EstadoBloqueo.Idle) }
         var mostrarConfirmacionBloqueo by remember(alerta.docId) { mutableStateOf(false) }
+        var estadoDeshabilitar by remember(alerta.docId) { mutableStateOf<EstadoDeshabilitar>(EstadoDeshabilitar.Idle) }
+        var mostrarConfirmacionDeshabilitar by remember(alerta.docId) { mutableStateOf(false) }
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
@@ -175,15 +193,23 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
 
             val srcIpBloqueo = alerta.srcIp
             val agentIdBloqueo = alerta.agentId
-            if (!alerta.isOt && srcIpBloqueo != null && agentIdBloqueo != null) {
+            if (srcIpBloqueo != null && agentIdBloqueo != null) {
                 Spacer(Modifier.height(16.dp))
+                if (alerta.isOt) {
+                    Text(
+                        "⚠ Activo OT: esta acción puede afectar a producción.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HermesRed
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
                 when (val eb = estadoBloqueo) {
                     is EstadoBloqueo.Idle -> {
                         Button(
                             onClick = { mostrarConfirmacionBloqueo = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = MaterialTheme.colorScheme.onError
+                                containerColor = HermesAmber,
+                                contentColor = HermesBg
                             )
                         ) {
                             Text("Bloquear IP")
@@ -204,6 +230,52 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
                             Text("Error al bloquear: ${eb.mensaje}", color = HermesRed, style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.height(6.dp))
                             OutlinedButton(onClick = { mostrarConfirmacionBloqueo = true }) {
+                                Text("Reintentar")
+                            }
+                        }
+                    }
+                }
+            }
+
+            val srcUserDeshabilitar = alerta.srcUser
+            val agentIdDeshabilitar = alerta.agentId
+            if (srcUserDeshabilitar != null && agentIdDeshabilitar != null) {
+                Spacer(Modifier.height(12.dp))
+                if (alerta.isOt) {
+                    Text(
+                        "⚠ Activo OT: esta acción puede afectar a producción.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = HermesRed
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+                when (val ed = estadoDeshabilitar) {
+                    is EstadoDeshabilitar.Idle -> {
+                        Button(
+                            onClick = { mostrarConfirmacionDeshabilitar = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Text("Deshabilitar cuenta")
+                        }
+                    }
+                    is EstadoDeshabilitar.Deshabilitando -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.padding(start = 10.dp))
+                            Text("Deshabilitando $srcUserDeshabilitar…", style = MaterialTheme.typography.bodySmall, color = HermesInkDim)
+                        }
+                    }
+                    is EstadoDeshabilitar.Deshabilitada -> {
+                        Text("Cuenta $srcUserDeshabilitar deshabilitada en el agente $agentIdDeshabilitar.", color = HermesGreen)
+                    }
+                    is EstadoDeshabilitar.Error -> {
+                        Column {
+                            Text("Error al deshabilitar: ${ed.mensaje}", color = HermesRed, style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedButton(onClick = { mostrarConfirmacionDeshabilitar = true }) {
                                 Text("Reintentar")
                             }
                         }
@@ -254,12 +326,27 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
         if (mostrarConfirmacionBloqueo && srcIpDialogo != null && agentIdDialogo != null) {
             AlertDialog(
                 onDismissRequest = { mostrarConfirmacionBloqueo = false },
-                title = { Text("Confirmar bloqueo de IP") },
-                text = {
+                title = {
                     Text(
-                        "Se bloqueará la IP $srcIpDialogo en el agente $agentIdDialogo mediante Active " +
-                            "Response (firewall-drop). La regla se aplica de inmediato en ese equipo."
+                        if (alerta.isOt) "⚠ Confirmar bloqueo de IP (Activo OT)" else "Confirmar bloqueo de IP",
+                        color = if (alerta.isOt) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
+                },
+                text = {
+                    Column {
+                        if (alerta.isOt) {
+                            Text(
+                                "⚠ Activo OT — esta acción puede afectar a producción. ¿Continuar?",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        Text(
+                            "Se bloqueará la IP $srcIpDialogo en el agente $agentIdDialogo mediante Active " +
+                                "Response (firewall-drop). La regla se aplica de inmediato en ese equipo."
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(onClick = {
@@ -288,6 +375,66 @@ fun AlertDetailScreen(alerta: AlertaCruda?, onVolver: () -> Unit) {
                 },
                 dismissButton = {
                     TextButton(onClick = { mostrarConfirmacionBloqueo = false }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        val srcUserDialogo = alerta.srcUser
+        val agentIdDeshabilitarDialogo = alerta.agentId
+        if (mostrarConfirmacionDeshabilitar && srcUserDialogo != null && agentIdDeshabilitarDialogo != null) {
+            AlertDialog(
+                onDismissRequest = { mostrarConfirmacionDeshabilitar = false },
+                title = {
+                    Text(
+                        if (alerta.isOt) "⚠ Confirmar deshabilitación de cuenta (Activo OT)" else "Confirmar deshabilitación de cuenta",
+                        color = if (alerta.isOt) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                text = {
+                    Column {
+                        if (alerta.isOt) {
+                            Text(
+                                "⚠ Activo OT — esta acción puede afectar a producción. ¿Continuar?",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        Text(
+                            "Se deshabilitará la cuenta $srcUserDialogo en el agente $agentIdDeshabilitarDialogo " +
+                                "mediante Active Response (disable-account). La cuenta queda bloqueada de inmediato en ese equipo."
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mostrarConfirmacionDeshabilitar = false
+                        estadoDeshabilitar = EstadoDeshabilitar.Deshabilitando
+                        scope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                try {
+                                    val stored = CredentialStore.load(context)
+                                    if (!stored.isActiveResponseComplete) {
+                                        EstadoDeshabilitar.Error("Faltan credenciales de Respuesta activa en Ajustes")
+                                    } else {
+                                        val arConfig = ActiveResponseConfig(stored.wazuhApiUrl, stored.arUsername, stored.arPassword)
+                                        ActiveResponseSource(arConfig).disableAccount(agentIdDeshabilitarDialogo, srcUserDialogo)
+                                        EstadoDeshabilitar.Deshabilitada
+                                    }
+                                } catch (e: Exception) {
+                                    EstadoDeshabilitar.Error(e.message ?: "error desconocido")
+                                }
+                            }
+                            estadoDeshabilitar = resultado
+                        }
+                    }) {
+                        Text("Deshabilitar", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarConfirmacionDeshabilitar = false }) {
                         Text("Cancelar")
                     }
                 }

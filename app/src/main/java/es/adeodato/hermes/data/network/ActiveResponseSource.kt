@@ -76,12 +76,29 @@ class ActiveResponseSource(private val config: ActiveResponseConfig) {
      * la API devuelve error!=0 (p.ej. agente desconectado).
      */
     fun blockIp(agentId: String, srcIp: String) {
+        dispararComando(agentId, "!firewall-drop", "srcip", srcIp)
+    }
+
+    /**
+     * Ejecuta el comando ESTANDAR !disable-account (no el custom -- verificado
+     * en el servidor el 2026-07-31: los AR custom no se ejecutan al invocarlos
+     * por API, solo los del ruleset base de Wazuh) en [agentId] para bloquear
+     * la cuenta [dstuser] (usermod -L). El binario del AR espera el usuario en
+     * el campo JSON "dstuser", no "srcuser" -- confirmado extrayendo las
+     * cadenas del binario compilado disable-account.
+     */
+    fun disableAccount(agentId: String, dstuser: String) {
+        dispararComando(agentId, "!disable-account", "dstuser", dstuser)
+    }
+
+    /** Autentica y dispara [command] en [agentId] con un unico campo de datos en alert.data. Lanza ArgosApiException si falla o si la API devuelve error!=0. */
+    private fun dispararComando(agentId: String, command: String, campoDatos: String, valorDatos: String) {
         val jwt = authenticate()
         val base = config.wazuhApiUrl.trimEnd('/')
         val bodyJson = JSONObject().apply {
-            put("command", "!firewall-drop")
+            put("command", command)
             put("alert", JSONObject().apply {
-                put("data", JSONObject().apply { put("srcip", srcIp) })
+                put("data", JSONObject().apply { put(campoDatos, valorDatos) })
             })
         }.toString()
         val request = Request.Builder()
